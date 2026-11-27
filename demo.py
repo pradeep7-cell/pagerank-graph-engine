@@ -1,75 +1,52 @@
+import random
 from engine import compute_pagerank
+from generator import generate_web_graph
 
 
-def run_search_demo():
-    # 1. Define 6 realistic web pages with titles and content
-    pages = {
-        0: {
-            "url": "https://wikipedia.org",
-            "title": "Python (programming language) - Wikipedia",
-            "content": "python programming language data science algorithms",
-        },
-        1: {
-            "url": "https://python.org",
-            "title": "Official Python 3 Documentation",
-            "content": "python standard library reference tutorial",
-        },
-        2: {
-            "url": "https://spam-site.xyz",
-            "title": "BUY PYTHON PYTHON PYTHON CHEAP NOW!!!",
-            "content": "python python python python python click here",
-        },
-        3: {
-            "url": "https://github.com",
-            "title": "Trending Python Repositories on GitHub",
-            "content": "open source python projects machine learning",
-        },
-        4: {
-            "url": "https://stackoverflow.com",
-            "title": "Newest 'python' Questions - Stack Overflow",
-            "content": "python programming help code debugging",
-        },
-        5: {
-            "url": "https://random-blog.net",
-            "title": "Best South Indian Breakfast Recipes",
-            "content": "dosa idli chutney filter coffee recipes",
-        },
+def run_25k_search_engine():
+    num_nodes = 25000
+    print(f"Building simulated internet of {num_nodes:,} web pages...")
+    edges = generate_web_graph(num_nodes, seed=42)
+    ranks, iters = compute_pagerank(num_nodes, edges)
+
+    # Assign realistic domains and topics to all 25,000 pages
+    topics = {
+        "python": ("Python Programming & Data Science", "python programming code algorithms numpy"),
+        "ai": ("Artificial Intelligence & Neural Networks", "ai artificial intelligence machine learning deep learning"),
+        "blockchain": ("Blockchain Forensics & Crypto Tracing", "blockchain crypto bitcoin ethereum ledger security"),
+        "cricket": ("International Cricket Scores & Analytics", "cricket india match scorecard batting bowling"),
+        "java": ("Java Enterprise & Data Structures", "java object oriented programming structures algorithms"),
+        "movies": ("Cinema Box Office & Film Reviews", "movies cinema film director box office reviews"),
+        "recipes": ("South Indian & Global Recipes", "recipes dosa idli cooking food ingredients"),
+        "math": ("Linear Algebra & Graph Theory", "mathematics linear algebra matrix eigenvalues graph"),
     }
+    domains = ["wikipedia.org", "github.com", "stackoverflow.com", "medium.com", "arxiv.org", "docs.org", "news-daily.net", "blog-hub.xyz"]
 
-    # 2. Define directed links (u -> v means page u recommends page v)
-    edges = [
-        (1, 0),  # Official Docs -> Wikipedia
-        (3, 0),  # GitHub -> Wikipedia
-        (4, 0),  # StackOverflow -> Wikipedia
-        (0, 1),  # Wikipedia -> Official Docs
-        (3, 1),  # GitHub -> Official Docs
-        (4, 1),  # StackOverflow -> Official Docs
-        (0, 4),  # Wikipedia -> StackOverflow
-        (1, 4),  # Official Docs -> StackOverflow
-        (2, 0),  # Spam site links to Wikipedia, but NO ONE links to Spam site!
-        (5, 0),  # Cooking blog links to Wikipedia
-    ]
+    rng = random.Random(42)
+    topic_keys = list(topics.keys())
+    pages = {}
 
-    # 3. Run your PageRank engine
-    ranks, iters = compute_pagerank(len(pages), edges)
+    for pid in range(num_nodes):
+        t_key = rng.choice(topic_keys)
+        title_base, keywords = topics[t_key]
+        domain = rng.choice(domains)
+        pages[pid] = {
+            "url": f"https://{domain}/{t_key}/page-{pid}",
+            "title": f"{title_base} (Node #{pid})",
+            "content": keywords,
+        }
 
-    print("=" * 65)
-    print("  MINI GOOGLE SEARCH ENGINE (POWERED BY YOUR PAGERANK ENGINE)")
-    print("=" * 65)
-    print(f"Indexed {len(pages)} pages and {len(edges)} hyperlinks in {iters} iterations.\n")
+    print("=" * 68)
+    print(f"  25,000-PAGE SEARCH ENGINE (CONVERGED IN {iters} ITERATIONS)")
+    print("=" * 68)
+    print("Available topics to search:")
+    print("  'python', 'ai', 'blockchain', 'cricket', 'java', 'movies', 'recipes', 'math'")
 
-    print("Global Authority Scores (PageRank):")
-    for pid, score in sorted(enumerate(ranks), key=lambda x: x[1], reverse=True):
-        print(f"  [{score:.4f}] {pages[pid]['url']}")
-
-    # 4. Interactive Search Loop
-    print("\nTry searching for: 'python', 'programming', or 'recipes' (type 'exit' to quit)")
     while True:
-        query = input("\nSearch Query > ").strip().lower()
+        query = input("\nSearch Query (or 'exit') > ").strip().lower()
         if query in ("exit", "quit", ""):
             break
 
-        # Filter pages matching the keyword, then rank strictly by PageRank score
         matches = []
         for pid, info in pages.items():
             if query in info["content"] or query in info["title"].lower():
@@ -78,13 +55,13 @@ def run_search_demo():
         matches.sort(reverse=True)
 
         if not matches:
-            print(f"  No results found for '{query}'.")
+            print(f"  No pages matched '{query}'. Try one of the topics listed above.")
         else:
-            print(f"\nShowing {len(matches)} results for '{query}' (Ranked by PageRank):")
-            for rank_num, (score, pid, info) in enumerate(matches, 1):
+            print(f"\nFound {len(matches):,} matching pages for '{query}'. Top 5 by PageRank:")
+            for rank_num, (score, pid, info) in enumerate(matches[:5], 1):
                 print(f"  #{rank_num} | {info['title']}")
-                print(f"      URL: {info['url']}  (PageRank Score: {score:.4f})")
+                print(f"      URL: {info['url']}  |  PageRank: {score:.6f}")
 
 
 if __name__ == "__main__":
-    run_search_demo()
+    run_25k_search_engine()
